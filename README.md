@@ -12,6 +12,8 @@ python serve.py
 
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000) and select **Run demo**. Review the timeout and retry in Activity, then choose **Keep pending** or **Approve & mock send**. After sending, **Repeat approval check** verifies that the existing receipt is returned. The browser restores the last opened request on refresh. You can also open a request created by the CLI using its request ID.
 
+To demo a trip revision, run a fresh request and open its request ID in a second tab. In the first tab, choose **Revise trip**, move the mocked departure from 09:00 to 11:30 Pacific time, and click **Recheck and requote**. The engine saves a new quote version. Approving the old version in the second tab is blocked and loads the revised draft for a separate approval.
+
 The dashboard requires only Python. It invokes the same CLI and uses the same `.charter-state/` directory. Press Ctrl+C to stop the server. If port 8000 is in use, run `python serve.py --port 8001` and open the address printed in the terminal.
 
 ## Run the CLI
@@ -24,6 +26,8 @@ python charter.py approve REQ-1042
 python charter.py status REQ-1042
 ```
 
+To revise a pending CLI draft, run `python charter.py revise REQ-1042 --quote-id REQ-1042-Q1 --departure 11:30`. Use the current draft ID for later revisions. The CLI verifies the quote ID again after interactive confirmation.
+
 The availability mock times out once and succeeds on its second attempt. At the approval prompt, type `APPROVE` to approve the displayed quote. Run the approval command again to see the existing receipt, or use a fresh request ID to start another run.
 
 Run `python verify.py` for a narrated demo in a temporary directory. It checks that the first attempt fails, a second process can load the saved draft, declining leaves the quote pending, approval completes the mock send, and repeating approval leaves one send in the history.
@@ -34,7 +38,9 @@ Each request has a JSON checkpoint in `.charter-state/` with its status, draft, 
 
 **Key decision.** The CLI persists `SENDING` before calling the send tool. If the process stops there, another approval command will refuse to send automatically because the prior outcome may be ambiguous.
 
-**Limitation.** This is a sequential local CLI. A production sender would need coordinated workers and a provider idempotency key, such as the quote ID, to safely reconcile an interrupted send.
+**Quote revisions.** The draft captures its departure time and version. Editing the time preserves the earlier draft as superseded, rechecks mock availability, and requires approval of the replacement. A per-request file lock coordinates local writes so a revision cannot replace a draft between the final approval check and mock send.
+
+**Limitation.** The schedule and price are fixtures. A production sender would need coordinated workers and a provider idempotency key, such as the quote ID, to safely reconcile an interrupted send.
 
 ## Verified execution
 

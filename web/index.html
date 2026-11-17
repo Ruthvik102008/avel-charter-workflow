@@ -57,6 +57,7 @@
         <dl class="quote-details" id="quote-details" hidden>
           <div><dt>Aircraft</dt><dd id="aircraft"></dd></div>
           <div><dt>Quote total</dt><dd id="price"></dd></div>
+          <div><dt>Departure <span class="quote-time-zone">· Pacific time</span></dt><dd id="quote-departure"></dd></div>
           <div><dt>Draft ID</dt><dd class="mono" id="quote-id"></dd></div>
         </dl>
 
@@ -66,7 +67,15 @@
           <div class="actions" id="approval-actions" hidden>
             <button class="button button-dark" id="approve" type="button">Approve &amp; mock send</button>
             <button class="button button-outline" id="withhold" type="button">Keep pending</button>
+            <button class="button button-outline" id="revise" type="button" aria-controls="revision-form" aria-expanded="false">Revise trip</button>
           </div>
+          <form class="revision-form" id="revision-form" hidden>
+            <label for="departure">New departure (Pacific time)</label>
+            <div class="revision-controls">
+              <input id="departure" type="time" required step="60">
+              <button class="button button-dark" id="save-revision" type="submit">Recheck and requote</button>
+            </div>
+          </form>
           <button class="button button-outline" id="replay" type="button" hidden>Repeat approval check</button>
         </div>
       </section>

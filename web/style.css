@@ -129,6 +129,11 @@ h2 { font-size: 1rem; font-weight: 650; letter-spacing: -.025em; }
 .approval p { color: var(--muted); font-size: .79rem; line-height: 1.55; margin-top: 6px; overflow-wrap: anywhere; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 #replay { margin-top: 12px; }
+.quote-time-zone { white-space: nowrap; }
+.revision-form { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); }
+.revision-form label { display: block; margin-bottom: 7px; color: var(--muted); font-size: .75rem; }
+.revision-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.revision-controls input { min-height: 39px; border: 1px solid #d7dce0; border-radius: 8px; padding: 6px 9px; background: #fff; color: #202428; font: .8rem var(--mono); }
 
 .empty-history { color: var(--muted); font-size: .84rem; line-height: 1.5; padding: 17px 0; border-top: 1px solid var(--line); }
 .history { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; max-height: 405px; overflow-y: auto; }

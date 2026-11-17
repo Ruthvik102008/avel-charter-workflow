@@ -3,7 +3,10 @@
 const get = (id) => document.getElementById(id);
 const storageKey = "charter-workflow-request";
 const steps = [...document.querySelectorAll(".steps li")];
-const controls = ["start", "request-id", "open-request", "approve", "withhold", "replay"].map(get);
+const controls = [
+  "start", "request-id", "open-request", "approve", "withhold", "revise",
+  "departure", "save-revision", "replay",
+].map(get);
 const money = new Intl.NumberFormat("en-US", {
   style: "currency", currency: "USD", maximumFractionDigits: 0,
 });
@@ -16,7 +19,7 @@ const statuses = {
 };
 const eventTones = {
   FAILED: "error", RETRY: "current", PAUSED: "current",
-  SUCCESS: "done", APPROVED: "done", COMPLETE: "done",
+  SUCCESS: "done", APPROVED: "done", COMPLETE: "done", REVISED: "current",
 };
 
 let current = null;
@@ -97,7 +100,13 @@ function renderHistory(events) {
   get("history").replaceChildren(...entries);
 }
 
+function showRevision(open) {
+  get("revision-form").hidden = !open;
+  get("revise").setAttribute("aria-expanded", String(open));
+}
+
 function render(state) {
+  const priorQuoteId = current?.quote?.id;
   current = state;
   const status = state?.status;
   const quote = state?.quote;
@@ -112,7 +121,9 @@ function render(state) {
     get("aircraft").textContent = quote.aircraft;
     get("price").textContent = money.format(quote.price_usd);
     get("quote-id").textContent = quote.id;
+    get("quote-departure").textContent = quote.departure || "09:00";
   }
+  if (!pending || priorQuoteId !== quote?.id) showRevision(false);
 
   const copy = {
     AWAITING_APPROVAL: ["Review the saved draft", "The quote stays pending until you explicitly approve it."],
@@ -160,7 +171,9 @@ async function request(path, data) {
 async function approve(decision) {
   if (!current) return;
   const wasComplete = current.status === "COMPLETE";
-  const result = await request("/api/approve", { id: current.request_id, decision });
+  const result = await request("/api/approve", {
+    id: current.request_id, quote_id: current.quote.id, decision,
+  });
   if (result && wasComplete) feedback(result.output);
 }
 
@@ -171,6 +184,24 @@ function openRequest(id) {
 get("start").addEventListener("click", () => request("/api/start", {}));
 get("approve").addEventListener("click", () => approve("approve"));
 get("withhold").addEventListener("click", () => approve("withhold"));
+get("revise").addEventListener("click", () => {
+  const open = get("revision-form").hidden;
+  showRevision(open);
+  if (open) {
+    get("departure").value = current.quote.departure || "09:00";
+    get("departure").focus();
+  }
+});
+get("revision-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const result = await request("/api/revise", {
+    id: current.request_id, quote_id: current.quote.id, departure: get("departure").value,
+  });
+  if (result?.state.status === "AWAITING_APPROVAL") {
+    feedback("Revised quote is ready for a new approval.");
+    get("approve").focus();
+  }
+});
 get("replay").addEventListener("click", () => approve("approve"));
 get("lookup").addEventListener("submit", (event) => {
   event.preventDefault();

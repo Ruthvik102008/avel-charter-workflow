@@ -54,8 +54,36 @@ async function main() {
     await phone.getByRole("button", { name: "Open", exact: true }).click();
     await phone.getByText("Receipt MOCK-" + draft).waitFor();
     assert.equal(await phone.evaluate(() => document.documentElement.scrollWidth), 375);
+    await page.getByRole("button", { name: "Run demo" }).click();
+    await page.locator("#status").filter({ hasText: "Awaiting approval" }).waitFor();
+    const original = await page.locator("#quote-id").innerText();
+
+    const staleTab = await page.context().newPage();
+    await staleTab.goto(url);
+    await staleTab.getByText(original, { exact: true }).waitFor();
+    await page.getByRole("button", { name: "Revise trip" }).click();
+    await page.getByLabel("New departure (Pacific time)").fill("11:30");
+    await page.getByRole("button", { name: "Recheck and requote" }).click();
+    await page.getByText("Revised quote is ready for a new approval.").waitFor();
+    await page.getByText("Departure changed from 09:00 to 11:30 Pacific time").waitFor();
+    await page.getByText(original + " was superseded").waitFor();
+    assert.equal(await page.locator("#quote-departure").innerText(), "11:30");
+    await page.getByText("$19,250", { exact: true }).waitFor();
+    const revised = await page.locator("#quote-id").innerText();
+    assert.equal(revised, original.replace(/-Q1$/, "-Q2"));
+    assert.equal(await staleTab.locator("#quote-id").innerText(), original);
+
+    await staleTab.getByRole("button", { name: "Approve & mock send" }).click();
+    await staleTab.getByText("Quote " + original + " is no longer current.", { exact: false }).waitFor();
+    assert.equal(await staleTab.locator("#quote-id").innerText(), revised);
+    assert.equal(await staleTab.getByText(/Mock send completed/).count(), 0);
+    assert.equal(await staleTab.getByText(/Human approved/).count(), 0);
+
+    await staleTab.getByRole("button", { name: "Approve & mock send" }).click();
+    await staleTab.getByText("Receipt MOCK-" + revised).waitFor();
+    assert.equal(await staleTab.getByText(/Mock send completed/).count(), 1);
     assert.deepEqual(errors, []);
-    console.log("Verified browser retry, approval, reload, repeat approval, and mobile lookup.");
+    console.log("Verified browser retry, approval, reload, repeat approval, mobile lookup, and stale approval rejection.");
   } finally {
     try {
       if (browser) await browser.close();

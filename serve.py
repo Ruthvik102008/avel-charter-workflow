@@ -10,6 +10,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 from uuid import uuid4
 
+from charter import valid_departure
+
 ROOT = Path(__file__).resolve().parent
 ASSETS = {
     "/": ("index.html", "text/html; charset=utf-8"),
@@ -74,7 +76,7 @@ class Dashboard(BaseHTTPRequestHandler):
         ):
             self.send_json(403, {"error": "Use the local dashboard address."})
             return
-        if self.path not in {"/api/start", "/api/approve"}:
+        if self.path not in {"/api/start", "/api/approve", "/api/revise"}:
             self.send_json(404, {"error": "Action not found."})
             return
         if self.headers.get_content_type() != "application/json":
@@ -96,21 +98,34 @@ class Dashboard(BaseHTTPRequestHandler):
                 if not self.checkpoint(request_id).is_file():
                     self.send_json(404, {"error": "That request is not in this workspace."})
                     return
-                decision = data.get("decision")
-                if decision not in ("approve", "withhold"):
-                    raise ValueError("Choose approve or withhold.")
-                self.run_command("approve", request_id, "APPROVE\n" if decision == "approve" else "no\n")
+                quote_id = data.get("quote_id")
+                if not isinstance(quote_id, str) or not re.fullmatch(
+                    rf"{re.escape(request_id)}-Q[1-9][0-9]*", quote_id
+                ):
+                    raise ValueError("Include the displayed quote ID.")
+                arguments = ["--quote-id", quote_id]
+                if self.path == "/api/revise":
+                    departure = data.get("departure")
+                    if not valid_departure(departure):
+                        raise ValueError("Enter a departure time in HH:MM.")
+                    self.run_command("revise", request_id, arguments + ["--departure", departure])
+                else:
+                    decision = data.get("decision")
+                    if decision not in ("approve", "withhold"):
+                        raise ValueError("Choose approve or withhold.")
+                    response = "APPROVE\n" if decision == "approve" else "no\n"
+                    self.run_command("approve", request_id, arguments, response)
         except (ValueError, TypeError) as error:
             self.send_json(400, {"error": str(error)})
         except (OSError, subprocess.TimeoutExpired):
             self.send_json(500, {"error": "Could not run the workflow command. Reload to check its state."})
 
-    def run_command(self, command, request_id, response=""):
+    def run_command(self, command, request_id, arguments=(), response=""):
         path = self.checkpoint(request_id)
         result = subprocess.run(
             [
                 sys.executable, str(ROOT / "charter.py"),
-                "--state-dir", str(self.server.state_dir), command, request_id,
+                "--state-dir", str(self.server.state_dir), command, request_id, *arguments,
             ],
             input=response, text=True, capture_output=True, timeout=10, check=False,
         )
@@ -119,7 +134,7 @@ class Dashboard(BaseHTTPRequestHandler):
             return
         state = json.loads(path.read_text(encoding="utf-8"))
         output = result.stdout.strip()
-        if result.returncode and state["status"] != "FAILED":
+        if result.returncode and not (command == "start" and state["status"] == "FAILED"):
             self.send_json(409, {"state": state, "error": output or "The action could not run."})
             return
         self.send_json(200, {"state": state, "output": output})
