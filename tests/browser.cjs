@@ -21,7 +21,8 @@ async function main() {
     const url = message.toString().match(/http:\/\/127\.0\.0\.1:\d+/)[0];
 
     browser = await chromium.launch({ channel: "chrome" });
-    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await desktop.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(url);
@@ -58,7 +59,7 @@ async function main() {
     await page.locator("#status").filter({ hasText: "Awaiting approval" }).waitFor();
     const original = await page.locator("#quote-id").innerText();
 
-    const staleTab = await page.context().newPage();
+    const staleTab = await desktop.newPage();
     await staleTab.goto(url);
     await staleTab.getByText(original, { exact: true }).waitFor();
     await page.getByRole("button", { name: "Revise trip" }).click();
