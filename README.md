@@ -1,55 +1,45 @@
-# Charter workflow
+# Charter Workflow
 
-A Python workflow engine and local browser dashboard for a fictional charter inquiry. It checks aircraft availability, prepares a quote, waits for human approval, and records a mock delivery receipt.
+Avel Aero engineering assessment. A Python execution engine runs a fictional Oakland-to-Las Vegas charter inquiry through four steps: check aircraft availability, prepare a quote, wait for human approval, and deliver the approved quote through a mock sender. Availability, pricing, and delivery are all simulated.
 
-## Run the browser dashboard
+## Run locally
 
-From the repository root, run:
-
-```sh
-python serve.py
-```
-
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000) and select **Run demo**. Review the timeout and retry in Activity, then choose **Keep pending** or **Approve & mock send**. After sending, **Repeat approval check** verifies that the existing receipt is returned. The browser restores the last opened request on refresh. You can also open a request created by the CLI using its request ID.
-
-To demo a trip revision, run a fresh request and open its request ID in a second tab. In the first tab, choose **Revise trip**, move the mocked departure from 09:00 to 11:30 Pacific time, and click **Recheck and requote**. The engine saves a new quote version. Approving the old version in the second tab is blocked and loads the revised draft for a separate approval.
-
-The dashboard requires only Python. It invokes the same CLI and uses the same `.charter-state/` directory. Press Ctrl+C to stop the server. If port 8000 is in use, run `python serve.py --port 8001` and open the address printed in the terminal.
-
-## Run the CLI
-
-Use Python 3.9 or newer. Run these commands from the repository root.
+Use Python 3.9 or newer. The CLI and dashboard use the Python standard library.
 
 ```sh
+git clone https://github.com/Ruthvik102008/avel-charter-workflow.git
+cd avel-charter-workflow
 python charter.py start REQ-1042
-python charter.py approve REQ-1042
-python charter.py status REQ-1042
 ```
 
-To revise a pending CLI draft, run `python charter.py revise REQ-1042 --quote-id REQ-1042-Q1 --departure 11:30`. Use the current draft ID for later revisions. The CLI verifies the quote ID again after interactive confirmation.
+The first availability attempt times out by design. The second succeeds, and the CLI saves a draft and exits. To review and approve the saved draft, run:
 
-The availability mock times out once and succeeds on its second attempt. At the approval prompt, type `APPROVE` to approve the displayed quote. Run the approval command again to see the existing receipt, or use a fresh request ID to start another run.
+```sh
+python charter.py approve REQ-1042
+```
 
-Run `python verify.py` for a narrated demo in a temporary directory. It checks that the first attempt fails, a second process can load the saved draft, declining leaves the quote pending, approval completes the mock send, and repeating approval leaves one send in the history.
+Type `APPROVE` to authorize the mock send. Any other input leaves the draft pending. Use `python charter.py status REQ-1042` to see the current status and full history. Repeating approval after completion returns the existing receipt. Use a fresh request ID to repeat the demo.
+
+### Browser demo
+
+Run `python serve.py` from the repo root and open [http://127.0.0.1:8000](http://127.0.0.1:8000). Click **Run demo**, review the quote and Activity, then choose **Keep pending** or **Approve & mock send**. Keep the terminal open while using the dashboard. If port 8000 is in use, try `python serve.py --port 8001`.
+
+To see stale approval protection, open the same pending request in two tabs. In the first, choose **Revise trip**, set departure to **11:30 Pacific**, and click **Recheck and requote**. In the second, try to approve the original draft. The approval is blocked and the replacement is shown for a fresh decision.
 
 ## Architecture
 
-Each request has a JSON checkpoint in `.charter-state/` with its status, draft, event history, and eventual mock receipt. The availability result supplies the aircraft and price for the quote. The quote is saved before the CLI exits, so a later process can display and send the same draft after explicit approval. The engine retries the availability timeout once.
-
-**Key decision.** The CLI persists `SENDING` before calling the send tool. If the process stops there, another approval command will refuse to send automatically because the prior outcome may be ambiguous.
-
-**Quote revisions.** The draft captures its departure time and version. Editing the time preserves the earlier draft as superseded, rechecks mock availability, and requires approval of the replacement. A per-request file lock coordinates local writes so a revision cannot replace a draft between the final approval check and mock send.
-
-**Limitation.** The schedule and price are fixtures. A production sender would need coordinated workers and a provider idempotency key, such as the quote ID, to safely reconcile an interrupted send.
+- **Engine and state.** [`charter.py`](charter.py) passes the mock aircraft and price to quote preparation, retries a temporary timeout once, and records each transition. It saves request status, drafts, history, and the receipt in a per-request JSON checkpoint under `.charter-state/`. The [dashboard server](serve.py) invokes the same CLI and reads the same checkpoints.
+- **Key decision.** Persist the exact version of the draft before asking for approval. When an operator confirms, the engine checks the quote ID under a per-request lock before entering `SENDING`. A revision supersedes the prior draft and requires fresh approval.
+- **Limitation.** If delivery is interrupted after `SENDING` is saved, the engine stops for manual review. A production integration would need a provider idempotency key and reconciliation to resume an ambiguous send safely.
 
 ## Verified execution
 
-Excerpt from the [GitHub Actions demo](https://github.com/Ruthvik102008/avel-charter-workflow/actions/runs/43983368013/job/133705193837).
+Run `python verify.py` to reproduce the CLI demo in temporary storage. The excerpt below is from the [passing GitHub Actions run](https://github.com/Ruthvik102008/avel-charter-workflow/actions/runs/43986922813), which also verifies stale approval in two browser tabs and from the Windows CLI.
 
 ```text
 $ python charter.py start REQ-1042
 [START    ] Workflow REQ-1042
-[RUNNING  ] Check aircraft availability
+[RUNNING  ] Check aircraft availability for 09:00 Pacific time
 [FAILED   ] Temporary availability API timeout
 [RETRY    ] Check aircraft availability (attempt 2)
 [SUCCESS  ] Aircraft available: N104AV
@@ -58,11 +48,13 @@ $ python charter.py start REQ-1042
 
 $ python charter.py approve REQ-1042
 REQ-1042-Q1 | Oakland (OAK) to Las Vegas (LAS) | Citation XLS+ (N104AV) | USD 18,500
+Departure: 09:00 Pacific time
 Type APPROVE to send this quote (mock):
 [PAUSED   ] Approval withheld. Quote remains pending.
 
 $ python charter.py approve REQ-1042
 REQ-1042-Q1 | Oakland (OAK) to Las Vegas (LAS) | Citation XLS+ (N104AV) | USD 18,500
+Departure: 09:00 Pacific time
 Type APPROVE to send this quote (mock):
 [APPROVED ] Human approved REQ-1042-Q1
 [RUNNING  ] Send approved quote (mock)
