@@ -1,8 +1,20 @@
 # Charter workflow
 
-A Python CLI for a fictional charter inquiry. It checks aircraft availability, prepares a quote, waits for human approval, and records a mock delivery receipt.
+A Python workflow engine and local browser dashboard for a fictional charter inquiry. It checks aircraft availability, prepares a quote, waits for human approval, and records a mock delivery receipt.
 
-## Run the demo
+## Run the browser dashboard
+
+From the repository root, run:
+
+```sh
+python serve.py
+```
+
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000) and select **Run demo**. Review the timeout and retry in Activity, then choose **Keep pending** or **Approve & mock send**. After sending, **Repeat approval check** verifies that the existing receipt is returned. The browser restores the last opened request on refresh. You can also open a request created by the CLI using its request ID.
+
+The dashboard requires only Python. It invokes the same CLI and uses the same `.charter-state/` directory. Press Ctrl+C to stop the server. If port 8000 is in use, run `python serve.py --port 8001` and open the address printed in the terminal.
+
+## Run the CLI
 
 Use Python 3.9 or newer. Run these commands from the repository root.
 

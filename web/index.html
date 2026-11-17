@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Charter Operations</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div class="brand"><span class="mark" aria-hidden="true"></span> Charter Operations</div>
+      <span class="mode"><span aria-hidden="true"></span> Local simulation</span>
+    </header>
+
+    <section class="intro">
+      <div>
+        <h1>Charter workflow</h1>
+        <p>Check availability, review a quote, and authorize a mock send.</p>
+      </div>
+      <button class="button button-start" id="start" type="button">Run demo <span aria-hidden="true">↗</span></button>
+    </section>
+    <p class="feedback" id="feedback" role="status" hidden></p>
+
+    <div class="workspace">
+      <aside class="sidebar" aria-labelledby="workflow-heading">
+        <h2 id="workflow-heading">Workflow</h2>
+        <p class="request-label" id="request-label">No request selected</p>
+        <ol class="steps">
+          <li data-step="0"><span class="step-index" aria-hidden="true">01</span><div>Check availability<span class="step-state">Queued</span></div></li>
+          <li data-step="1"><span class="step-index" aria-hidden="true">02</span><div>Prepare quote<span class="step-state">Queued</span></div></li>
+          <li data-step="2"><span class="step-index" aria-hidden="true">03</span><div>Human approval<span class="step-state">Queued</span></div></li>
+          <li data-step="3"><span class="step-index" aria-hidden="true">04</span><div>Send quote<span class="step-state">Queued</span></div></li>
+        </ol>
+        <form class="lookup" id="lookup">
+          <label for="request-id">Open a saved request</label>
+          <div class="lookup-controls">
+            <input id="request-id" name="id" placeholder="REQ-1042" required maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9_\-]{0,63}" spellcheck="false" autocomplete="off">
+            <button class="button button-outline" id="open-request" type="submit">Open</button>
+          </div>
+        </form>
+      </aside>
+
+      <section class="quote-panel" aria-labelledby="quote-heading">
+        <div class="panel-heading">
+          <h2 id="quote-heading">Charter quote</h2>
+          <span class="status" id="status">Ready</span>
+        </div>
+
+        <div class="route">
+          <div class="airport"><strong>OAK</strong><span>Oakland</span></div>
+          <div class="route-line" aria-hidden="true"><span>→</span></div>
+          <div class="airport airport-end"><strong>LAS</strong><span>Las Vegas</span></div>
+        </div>
+        <dl class="quote-details" id="quote-details" hidden>
+          <div><dt>Aircraft</dt><dd id="aircraft"></dd></div>
+          <div><dt>Quote total</dt><dd id="price"></dd></div>
+          <div><dt>Draft ID</dt><dd class="mono" id="quote-id"></dd></div>
+        </dl>
+
+        <div class="approval">
+          <h3 id="approval-heading">Ready to run</h3>
+          <p id="approval-copy">Run the demo to simulate an availability timeout, recover on retry, and prepare a draft.</p>
+          <div class="actions" id="approval-actions" hidden>
+            <button class="button button-dark" id="approve" type="button">Approve &amp; mock send</button>
+            <button class="button button-outline" id="withhold" type="button">Keep pending</button>
+          </div>
+          <button class="button button-outline" id="replay" type="button" hidden>Repeat approval check</button>
+        </div>
+      </section>
+
+      <section class="history-panel" aria-labelledby="history-heading">
+        <div class="panel-heading">
+          <h2 id="history-heading">Activity</h2>
+          <span class="event-count" id="event-count">0 events</span>
+        </div>
+        <p class="empty-history" id="empty-history">Events appear here after the workflow starts.</p>
+        <ol class="history" id="history" aria-label="Workflow events, newest first"></ol>
+      </section>
+    </div>
+    <footer>Charter workflow demo <span>Python execution engine</span></footer>
+  </main>
+</body>
+</html>

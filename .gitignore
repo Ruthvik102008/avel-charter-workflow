@@ -1,2 +1,3 @@
 .charter-state/
 __pycache__/
+node_modules/
