@@ -24,6 +24,8 @@ Type `APPROVE` to authorize the mock send. Any other input leaves the draft pend
 
 Run `python serve.py` from the repo root and open [http://127.0.0.1:8000](http://127.0.0.1:8000). Click **Run demo**, review the quote and Activity, then choose **Keep pending** or **Approve & mock send**. Keep the terminal open while using the dashboard. If port 8000 is in use, try `python serve.py --port 8001`.
 
+**Refresh a request.** Refresh the page to reopen the last request viewed in that browser. The dashboard loads the latest saved quote, approval status, activity, and any mock receipt from the server. A pending quote still requires explicit approval after refresh.
+
 To see stale approval protection, open the same pending request in two tabs. In the first, choose **Revise trip**, set departure to **11:30 Pacific**, and click **Recheck and requote**. In the second, try to approve the original draft. The approval is blocked and the replacement is shown for a fresh decision.
 
 ## Architecture
