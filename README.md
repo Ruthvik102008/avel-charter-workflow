@@ -4,7 +4,7 @@ Avel Aero engineering assessment. A Python execution engine runs a fictional Oak
 
 ## Run locally
 
-Use Python 3.9 or newer. The CLI and dashboard use the Python standard library.
+Use Python 3.9 or newer. The CLI and dashboard use the Python standard library. The examples use `python` on Windows. On macOS, use `python3` for the same commands.
 
 ```sh
 git clone https://github.com/Ruthvik102008/avel-charter-workflow.git
@@ -22,7 +22,7 @@ Type `APPROVE` to authorize the mock send. Any other input leaves the draft pend
 
 ### Browser demo
 
-Run `python serve.py` from the repo root and open [http://127.0.0.1:8000](http://127.0.0.1:8000). Click **Run demo**, review the quote and Activity, then choose **Keep pending** or **Approve & mock send**. Keep the terminal open while using the dashboard. If port 8000 is in use, try `python serve.py --port 8001`.
+From the repo root, run `python serve.py` on Windows or `python3 serve.py` on macOS. Then open [http://127.0.0.1:8000](http://127.0.0.1:8000). Click **Run demo**, review the quote and Activity, then choose **Keep pending** or **Approve & mock send**. Keep the terminal open while using the dashboard. If port 8000 is in use, try `python serve.py --port 8001`.
 
 **Refresh a request.** Refresh the page to reopen the last request viewed in that browser. The dashboard loads the latest saved quote, approval status, activity, and any mock receipt from the server. A pending quote still requires explicit approval after refresh.
 
