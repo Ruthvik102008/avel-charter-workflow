@@ -74,30 +74,39 @@ function renderSteps(state) {
 }
 
 function renderHistory(events) {
+  const history = get("history");
   get("event-count").textContent = events.length + (events.length === 1 ? " event" : " events");
   get("empty-history").hidden = events.length > 0;
   const entries = [...events].reverse().map((line) => {
     const match = line.match(/^\[([A-Z]+)\s*\]\s*(.*)$/);
     const type = match ? match[1] : "EVENT";
     const message = match ? match[2] : line;
+    const simulatedTimeout = type === "FAILED" && message === "Temporary availability API timeout";
     const item = document.createElement("li");
     const dot = document.createElement("span");
     const text = document.createElement("div");
     const label = document.createElement("span");
     const description = document.createElement("p");
 
-    item.dataset.tone = eventTones[type] || "";
+    item.dataset.tone = simulatedTimeout ? "current" : eventTones[type] || "";
     dot.className = "event-dot";
     dot.setAttribute("aria-hidden", "true");
     label.className = "event-label";
-    label.textContent = type;
+    label.textContent = simulatedTimeout ? "SIMULATED TIMEOUT" : type === "RUNNING" ? "STARTED" : type;
     description.className = "event-message";
-    description.textContent = message;
+    if (type === "PAUSED" && message === "Waiting for explicit approval") {
+      description.textContent = "Draft paused for operator review.";
+    } else if (type === "PAUSED" && message === "Approval withheld. Quote remains pending.") {
+      description.textContent = "Operator deferred approval.";
+    } else {
+      description.textContent = message;
+    }
     text.append(label, description);
     item.append(dot, text);
     return item;
   });
-  get("history").replaceChildren(...entries);
+  history.replaceChildren(...entries);
+  history.scrollTop = 0;
 }
 
 function showRevision(open) {
@@ -106,7 +115,8 @@ function showRevision(open) {
 }
 
 function render(state) {
-  const priorQuoteId = current?.quote?.id;
+  const previous = current;
+  const priorQuoteId = previous?.quote?.id;
   current = state;
   const status = state?.status;
   const quote = state?.quote;
@@ -140,7 +150,9 @@ function render(state) {
   get("approval-actions").hidden = !pending;
   get("replay").hidden = !complete;
   renderSteps(state);
-  renderHistory(state?.history || []);
+  if (previous?.request_id !== state?.request_id || previous?.history.length !== state?.history.length) {
+    renderHistory(state?.history || []);
+  }
   if (state) {
     get("request-id").value = state.request_id;
     remember(state.request_id);

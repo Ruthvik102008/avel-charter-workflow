@@ -28,7 +28,8 @@ async function main() {
     await page.goto(url);
     await page.getByRole("button", { name: "Run demo" }).click();
     await page.locator("#status").filter({ hasText: "Awaiting approval" }).waitFor();
-    await page.getByText("Temporary availability API timeout").waitFor();
+    await page.getByText("SIMULATED TIMEOUT", { exact: true }).waitFor();
+    await page.getByText("Draft paused for operator review.").waitFor();
     await page.getByText("Check aircraft availability (attempt 2)").waitFor();
     await page.getByText("$18,500", { exact: true }).waitFor();
     assert.equal(await page.getByText(/Mock send completed/).count(), 0);
@@ -36,7 +37,7 @@ async function main() {
     const requestId = await page.locator("#request-id").inputValue();
 
     await page.getByRole("button", { name: "Keep pending" }).click();
-    await page.getByText("Approval withheld. Quote remains pending.").waitFor();
+    await page.getByText("Operator deferred approval.").waitFor();
     assert.equal(await page.getByText(/Mock send completed/).count(), 0);
 
     await page.reload();
@@ -80,8 +81,15 @@ async function main() {
     assert.equal(await staleTab.getByText(/Mock send completed/).count(), 0);
     assert.equal(await staleTab.getByText(/Human approved/).count(), 0);
 
+    const history = staleTab.locator("#history");
+    const priorScroll = await history.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+      return element.scrollTop;
+    });
+    assert.ok(priorScroll > 0);
     await staleTab.getByRole("button", { name: "Approve & mock send" }).click();
     await staleTab.getByText("Receipt MOCK-" + revised).waitFor();
+    assert.equal(await history.evaluate((element) => element.scrollTop), 0);
     assert.equal(await staleTab.getByText(/Mock send completed/).count(), 1);
     assert.deepEqual(errors, []);
     console.log("Verified browser retry, approval, reload, repeat approval, mobile lookup, and stale approval rejection.");
